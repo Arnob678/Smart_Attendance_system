@@ -1,6 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const { getDB, SERIES_SEMESTER } = require('../db/database');
+const { getRecommendations } = require('../data/curriculum');
+
+// GET /api/courses/recommendations?series=...&semester=...
+router.get('/recommendations', (req, res) => {
+  const { series, semester } = req.query;
+  const recs = getRecommendations(series, semester);
+  return res.json({ ok: true, ...recs });
+});
 
 // GET /api/courses?series=...&teacherId=...
 router.get('/', (req, res) => {
@@ -136,7 +144,7 @@ router.get('/:code', (req, res) => {
 
 // POST /api/courses
 router.post('/', (req, res) => {
-  const { code, name, series, teacherId, creditHours, enrolledStudentIds } = req.body;
+  const { code, name, series, teacherId, creditHours, enrolledStudentIds, semester } = req.body;
   if (!code || !name || !series) {
     return res.status(400).json({ ok: false, msg: 'Code, name, and series are required.' });
   }
@@ -149,7 +157,7 @@ router.post('/', (req, res) => {
     return res.status(400).json({ ok: false, msg: 'Course code already exists.' });
   }
 
-  const semester = SERIES_SEMESTER[series] || 1;
+  const courseSemester = semester ? Number(semester) : (SERIES_SEMESTER[series] || 1);
   const enrolledJson = (Array.isArray(enrolledStudentIds) && enrolledStudentIds.length > 0)
     ? JSON.stringify(enrolledStudentIds)
     : null;
@@ -157,7 +165,7 @@ router.post('/', (req, res) => {
   db.prepare(`
     INSERT INTO courses (code, name, series, semester, teacherId, creditHours, enrolledStudentIds)
     VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(cleanCode, name.trim(), series, semester, teacherId || null, Number(creditHours) || 3, enrolledJson);
+  `).run(cleanCode, name.trim(), series, courseSemester, teacherId || null, Number(creditHours) || 3, enrolledJson);
 
   return res.json({ ok: true, msg: 'Course created successfully.', code: cleanCode });
 });

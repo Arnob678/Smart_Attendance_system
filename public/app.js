@@ -1671,6 +1671,144 @@ async function renderCourseTable(){
   `;
 }
 
+const RUET_ECE_RECOMMENDATIONS = {
+  '25': {
+    defaultSem: 1,
+    semesters: {
+      1: {
+        label: '1st Year 1st Sem (1-1)',
+        courses: [
+          { code: 'ECE-1101', title: 'Electrical Circuit Analysis I', credits: 3.0, type: 'Theory' },
+          { code: 'ECE-1102', title: 'Electrical Circuit Analysis I Sessional', credits: 1.5, type: 'Sessional' },
+          { code: 'CSE-1103', title: 'Computer Programming', credits: 3.0, type: 'Theory' },
+          { code: 'CSE-1104', title: 'Computer Programming Sessional', credits: 1.5, type: 'Sessional' },
+          { code: 'MATH-1105', title: 'Mathematics I (Calculus & Analytical Geometry)', credits: 3.0, type: 'Theory' },
+          { code: 'PHY-1107', title: 'Physics (Electromagnetism & Waves)', credits: 3.0, type: 'Theory' },
+          { code: 'PHY-1108', title: 'Physics Sessional', credits: 1.5, type: 'Sessional' },
+          { code: 'HUM-1109', title: 'Technical English', credits: 3.0, type: 'Theory' }
+        ]
+      },
+      2: {
+        label: '1st Year 2nd Sem (1-2)',
+        courses: [
+          { code: 'ECE-1201', title: 'Electrical Circuit Analysis II', credits: 3.0, type: 'Theory' },
+          { code: 'ECE-1202', title: 'Electrical Circuit Analysis II Sessional', credits: 1.5, type: 'Sessional' },
+          { code: 'ECE-1203', title: 'Electronic Devices and Circuits', credits: 3.0, type: 'Theory' },
+          { code: 'ECE-1204', title: 'Electronic Devices and Circuits Sessional', credits: 1.5, type: 'Sessional' },
+          { code: 'MATH-1205', title: 'Mathematics II (Differential Equations & Vectors)', credits: 3.0, type: 'Theory' },
+          { code: 'CHEM-1207', title: 'Chemistry', credits: 3.0, type: 'Theory' },
+          { code: 'CHEM-1208', title: 'Chemistry Sessional', credits: 1.5, type: 'Sessional' },
+          { code: 'HUM-1209', title: 'Sociology and Government', credits: 2.0, type: 'Theory' }
+        ]
+      }
+    }
+  },
+  '24': {
+    defaultSem: 3,
+    semesters: {
+      3: {
+        label: '2nd Year 1st Sem (2-1)',
+        courses: [
+          { code: 'ECE-2101', title: 'Signals and Systems', credits: 3.0, type: 'Theory' },
+          { code: 'ECE-2102', title: 'Signals and Systems Simulation Sessional', credits: 1.5, type: 'Sessional' },
+          { code: 'ECE-2103', title: 'Data structure and Algorithm', credits: 3.0, type: 'Theory' },
+          { code: 'ECE-2104', title: 'Data structure and Algorithm Sessional', credits: 1.5, type: 'Sessional' },
+          { code: 'ECE-2105', title: 'Analog Electronics and Sessional-2', credits: 3.0, type: 'Theory' },
+          { code: 'ECE-2106', title: 'Analog Electronics Sessional', credits: 1.5, type: 'Sessional' },
+          { code: 'MATH-2107', title: 'Mathematics III (Matrices & Complex Variables)', credits: 3.0, type: 'Theory' },
+          { code: 'HUM-2109', title: 'Financial & Managerial Accounting', credits: 2.0, type: 'Theory' }
+        ]
+      },
+      4: {
+        label: '2nd Year 2nd Sem (2-2)',
+        courses: [
+          { code: 'ECE-2201', title: 'Digital Electronics and Logic Design', credits: 3.0, type: 'Theory' },
+          { code: 'ECE-2202', title: 'Digital Electronics Sessional', credits: 1.5, type: 'Sessional' },
+          { code: 'ECE-2203', title: 'Electromagnetic Fields and Waves', credits: 3.0, type: 'Theory' },
+          { code: 'ECE-2205', title: 'Numerical Methods and Programming', credits: 3.0, type: 'Theory' },
+          { code: 'ECE-2206', title: 'Numerical Methods Sessional', credits: 1.5, type: 'Sessional' },
+          { code: 'ECE-2207', title: 'Electrical Machines and Power Systems', credits: 3.0, type: 'Theory' },
+          { code: 'ECE-2208', title: 'Electrical Machines Sessional', credits: 1.5, type: 'Sessional' },
+          { code: 'MATH-2209', title: 'Mathematics IV (Fourier Series & Statistics)', credits: 3.0, type: 'Theory' }
+        ]
+      }
+    }
+  },
+  '23': {
+    defaultSem: 5,
+    semesters: {
+      5: {
+        label: '3rd Year 1st Sem (3-1)',
+        courses: [
+          { code: 'ECE-3101', title: 'Analog and Digital Communication', credits: 3.0, type: 'Theory' },
+          { code: 'ECE-3102', title: 'Communication Engineering Sessional', credits: 1.5, type: 'Sessional' },
+          { code: 'ECE-3103', title: 'Microprocessors and Microcontrollers', credits: 3.0, type: 'Theory' },
+          { code: 'ECE-3104', title: 'Microprocessors and Microcontrollers Sessional', credits: 1.5, type: 'Sessional' },
+          { code: 'ECE-3105', title: 'Control Systems Engineering', credits: 3.0, type: 'Theory' },
+          { code: 'ECE-3106', title: 'Control Systems Sessional', credits: 1.5, type: 'Sessional' },
+          { code: 'ECE-3107', title: 'Database Management Systems', credits: 3.0, type: 'Theory' },
+          { code: 'ECE-3108', title: 'Database Management Systems Sessional', credits: 1.5, type: 'Sessional' }
+        ]
+      },
+      6: {
+        label: '3rd Year 2nd Sem (3-2)',
+        courses: [
+          { code: 'ECE-3201', title: 'Digital Signal Processing', credits: 3.0, type: 'Theory' },
+          { code: 'ECE-3202', title: 'Digital Signal Processing Sessional', credits: 1.5, type: 'Sessional' },
+          { code: 'ECE-3203', title: 'Computer Networks', credits: 3.0, type: 'Theory' },
+          { code: 'ECE-3204', title: 'Computer Networks Sessional', credits: 1.5, type: 'Sessional' },
+          { code: 'ECE-3205', title: 'VLSI Circuit Design', credits: 3.0, type: 'Theory' },
+          { code: 'ECE-3206', title: 'VLSI Design Sessional', credits: 1.5, type: 'Sessional' },
+          { code: 'ECE-3207', title: 'Antennas and Radio Wave Propagation', credits: 3.0, type: 'Theory' },
+          { code: 'ECE-3208', title: 'Electronic Project Design Sessional', credits: 1.5, type: 'Sessional' }
+        ]
+      }
+    }
+  },
+  '22': {
+    defaultSem: 7,
+    semesters: {
+      7: {
+        label: '4th Year 1st Sem (4-1)',
+        courses: [
+          { code: 'ECE-4101', title: 'Wireless and Cellular Communication', credits: 3.0, type: 'Theory' },
+          { code: 'ECE-4102', title: 'Wireless Communication Sessional', credits: 1.5, type: 'Sessional' },
+          { code: 'ECE-4103', title: 'Optical Fiber Communication', credits: 3.0, type: 'Theory' },
+          { code: 'ECE-4104', title: 'Optical Fiber Communication Sessional', credits: 1.5, type: 'Sessional' },
+          { code: 'ECE-4105', title: 'Microwave and Radar Engineering', credits: 3.0, type: 'Theory' },
+          { code: 'ECE-4100', title: 'Project and Thesis I', credits: 3.0, type: 'Project' },
+          { code: 'HUM-4107', title: 'Engineering Economics and Industrial Management', credits: 3.0, type: 'Theory' }
+        ]
+      },
+      8: {
+        label: '4th Year 2nd Sem (4-2)',
+        courses: [
+          { code: 'ECE-4201', title: 'Artificial Intelligence and Machine Learning', credits: 3.0, type: 'Theory' },
+          { code: 'ECE-4202', title: 'AI and Machine Learning Sessional', credits: 1.5, type: 'Sessional' },
+          { code: 'ECE-4203', title: 'Satellite Communication and Remote Sensing', credits: 3.0, type: 'Theory' },
+          { code: 'ECE-4205', title: 'Biomedical Engineering & Embedded Systems', credits: 3.0, type: 'Theory' },
+          { code: 'ECE-4200', title: 'Project and Thesis II', credits: 3.0, type: 'Project' }
+        ]
+      }
+    }
+  },
+  '21': {
+    defaultSem: 8,
+    semesters: {
+      8: {
+        label: '4th Year 2nd Sem (4-2)',
+        courses: [
+          { code: 'ECE-4201', title: 'Artificial Intelligence and Machine Learning', credits: 3.0, type: 'Theory' },
+          { code: 'ECE-4202', title: 'AI and Machine Learning Sessional', credits: 1.5, type: 'Sessional' },
+          { code: 'ECE-4203', title: 'Satellite Communication and Remote Sensing', credits: 3.0, type: 'Theory' },
+          { code: 'ECE-4205', title: 'Biomedical Engineering & Embedded Systems', credits: 3.0, type: 'Theory' },
+          { code: 'ECE-4200', title: 'Project and Thesis II', credits: 3.0, type: 'Project' }
+        ]
+      }
+    }
+  }
+};
+
 async function openAddCourseModal(){
   const seriesRes = await api.get('/series');
   const seriesList = (seriesRes.ok && seriesRes.series) ? seriesRes.series : [];
@@ -1678,32 +1816,142 @@ async function openAddCourseModal(){
   const teachers = (teacherRes.ok && teacherRes.teachers) ? teacherRes.teachers.filter(t=>t.status==='approved') : [];
 
   openModal(`
-    <div class="modal-head"><h3>Add course</h3><button class="close" onclick="closeModal()">${ICONS.x}</button></div>
+    <div class="modal-head">
+      <div>
+        <h3>Add course</h3>
+        <p class="muted" style="font-size:12px;margin:2px 0 0">Select series & semester to see course recommendations.</p>
+      </div>
+      <button class="close" onclick="closeModal()">${ICONS.x}</button>
+    </div>
     <div class="form-grid">
       <div class="form-row">
-        <div class="field"><label>Course code</label><input class="input" id="ncCode" placeholder="ECE-3605"></div>
-        <div class="field"><label>Credit hours</label><input class="input" type="number" id="ncCredit" value="3"></div>
+        <div class="field">
+          <label>Series</label>
+          <select class="select" id="ncSeries" onchange="onAddCourseSeriesChange()">
+            ${seriesList.map(s=>`<option value="${s.code}">${s.code} Series</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label>Semester</label>
+          <select class="select" id="ncSemester" onchange="onAddCourseSemesterChange()"></select>
+        </div>
       </div>
-      <div class="field"><label>Course title</label><input class="input" id="ncName" placeholder="Renewable Energy Systems"></div>
+
+      <!-- Recommendation Section -->
+      <div class="rec-box" id="ncRecBox">
+        <div class="rec-header">
+          <strong id="ncRecTitle">💡 Recommended Courses:</strong>
+          <span>Click any card to auto-fill</span>
+        </div>
+        <div class="rec-grid" id="ncRecGrid"></div>
+      </div>
+
       <div class="form-row">
-        <div class="field"><label>Series</label><select class="select" id="ncSeries">${seriesList.map(s=>`<option value="${s.code}">${s.code} Series</option>`).join('')}</select></div>
-        <div class="field"><label>Teacher</label><select class="select" id="ncTeacher"><option value="">Unassigned</option>${teachers.map(t=>`<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('')}</select></div>
+        <div class="field">
+          <label>Course code</label>
+          <input class="input mono" id="ncCode" placeholder="e.g. ECE-2105" list="recCodeList">
+          <datalist id="recCodeList"></datalist>
+        </div>
+        <div class="field">
+          <label>Credit hours</label>
+          <input class="input" type="number" id="ncCredit" value="3" step="0.5">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Course title</label>
+        <input class="input" id="ncName" placeholder="e.g. Analog Electronics and Sessional-2" list="recNameList">
+        <datalist id="recNameList"></datalist>
+      </div>
+
+      <div class="field">
+        <label>Assigned teacher</label>
+        <select class="select" id="ncTeacher">
+          <option value="">Unassigned</option>
+          ${teachers.map(t=>`<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('')}
+        </select>
       </div>
     </div>
-    <div class="modal-actions"><button class="ghost-btn" onclick="closeModal()">Cancel</button><button class="primary-btn" onclick="createCourse()">${ICONS.check} Create course</button></div>
-  `);
+    <div class="modal-actions">
+      <button class="ghost-btn" onclick="closeModal()">Cancel</button>
+      <button class="primary-btn" onclick="createCourse()">${ICONS.check} Create course</button>
+    </div>
+  `, true);
+
+  onAddCourseSeriesChange();
+}
+
+function onAddCourseSeriesChange(){
+  const s = document.getElementById('ncSeries').value;
+  const sData = RUET_ECE_RECOMMENDATIONS[s];
+  const semSelect = document.getElementById('ncSemester');
+  
+  if(sData && sData.semesters){
+    const sems = Object.keys(sData.semesters);
+    semSelect.innerHTML = sems.map(num => `<option value="${num}" ${Number(num)===sData.defaultSem ? 'selected' : ''}>${sData.semesters[num].label}</option>`).join('');
+  } else {
+    semSelect.innerHTML = `<option value="1">1st Year 1st Sem (1-1)</option><option value="3">2nd Year 1st Sem (2-1)</option>`;
+  }
+  onAddCourseSemesterChange();
+}
+
+function onAddCourseSemesterChange(){
+  const s = document.getElementById('ncSeries').value;
+  const sem = document.getElementById('ncSemester').value;
+  const sData = RUET_ECE_RECOMMENDATIONS[s];
+  const semObj = sData?.semesters?.[sem];
+  const courses = semObj?.courses || [];
+
+  const recBox = document.getElementById('ncRecBox');
+  const recGrid = document.getElementById('ncRecGrid');
+  const recTitle = document.getElementById('ncRecTitle');
+  const codeList = document.getElementById('recCodeList');
+  const nameList = document.getElementById('recNameList');
+
+  if(courses.length > 0){
+    recBox.style.display = 'block';
+    recTitle.innerHTML = `💡 Recommended for ${s} Series — ${semObj.label}:`;
+    recGrid.innerHTML = courses.map(c => `
+      <div class="rec-card" onclick="selectRecommendedCourse('${c.code}', '${escapeHtml(c.title).replace(/'/g, "\\'")}', ${c.credits}, this)">
+        <div class="rec-card-top">
+          <span class="rec-card-code">${c.code}</span>
+          <span class="rec-card-badge">${c.type}</span>
+        </div>
+        <div class="rec-card-title" title="${escapeHtml(c.title)}">${escapeHtml(c.title)}</div>
+        <div class="rec-card-meta">${c.credits} Credits</div>
+      </div>
+    `).join('');
+
+    codeList.innerHTML = courses.map(c => `<option value="${c.code}">${c.title}</option>`).join('');
+    nameList.innerHTML = courses.map(c => `<option value="${c.title}">${c.code}</option>`).join('');
+  } else {
+    recBox.style.display = 'none';
+    codeList.innerHTML = '';
+    nameList.innerHTML = '';
+  }
+}
+
+function selectRecommendedCourse(code, title, credits, el){
+  document.getElementById('ncCode').value = code;
+  document.getElementById('ncName').value = title;
+  document.getElementById('ncCredit').value = credits;
+  
+  document.querySelectorAll('.rec-card').forEach(c => c.classList.remove('active'));
+  if(el) el.classList.add('active');
+  showToast(`Auto-filled ${code}!`, 'info');
 }
 
 async function createCourse(){
   const code = document.getElementById('ncCode').value.trim().toUpperCase();
   const name = document.getElementById('ncName').value.trim();
   const series = document.getElementById('ncSeries').value;
+  const semester = Number(document.getElementById('ncSemester')?.value) || 1;
   const teacherId = document.getElementById('ncTeacher').value || null;
   const creditHours = Number(document.getElementById('ncCredit').value)||3;
 
   if(!code||!name){ showToast('Course code and title are required.', 'error'); return; }
 
-  const res = await api.post('/courses', { code, name, series, teacherId, creditHours });
+  const res = await api.post('/courses', { code, name, series, semester, teacherId, creditHours });
   if(!res.ok){ showToast(res.msg || 'Failed to create course.', 'error'); return; }
   closeModal();
   showToast('Course created in database.', 'success');
