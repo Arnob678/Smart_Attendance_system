@@ -816,30 +816,146 @@ async function openTeacherCreateCourseModal(){
   const seriesList = (seriesRes.ok && seriesRes.series) ? seriesRes.series : [{code:'21'},{code:'22'},{code:'23'},{code:'24'},{code:'25'}];
 
   openModal(`
-    <div class="modal-head"><h3>Create a course</h3><button class="close" onclick="closeModal()">${ICONS.x}</button></div>
-    <p class="muted">Pick a series, then choose exactly which students to enroll.</p>
+    <div class="modal-head">
+      <div>
+        <h3>Create a course</h3>
+        <p class="muted" style="font-size:12px;margin:2px 0 0">Select series & semester to choose from official RUET ECE courses.</p>
+      </div>
+      <button class="close" onclick="closeModal()">${ICONS.x}</button>
+    </div>
     <div class="form-grid">
       <div class="form-row">
-        <div class="field"><label>Course code</label><input class="input" id="tcCode" placeholder="ECE-2405"></div>
-        <div class="field"><label>Credit hours</label><input class="input" type="number" id="tcCredit" value="3"></div>
+        <div class="field">
+          <label>Series</label>
+          <select class="select" id="tcSeries" onchange="onTeacherCourseSeriesChange()">
+            ${seriesList.map(s=>`<option value="${s.code}">${s.code} Series</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label>Semester</label>
+          <select class="select" id="tcSemester" onchange="onTeacherCourseSemesterChange()"></select>
+        </div>
       </div>
-      <div class="field"><label>Course title</label><input class="input" id="tcName" placeholder="Course title"></div>
-      <div class="field"><label>Series</label>
-        <select class="select" id="tcSeries" onchange="renderTeacherCourseStudentPicker()">
-          ${seriesList.map(s=>`<option value="${s.code}">${s.code} Series (Sem ${s.semester||''})</option>`).join('')}
-        </select>
+
+      <!-- Recommendation Section for Teacher -->
+      <div class="rec-box" id="tcRecBox">
+        <div class="rec-header">
+          <strong id="tcRecTitle">💡 Suggested Official Courses:</strong>
+          <span>Click any card to auto-fill</span>
+        </div>
+        <div class="rec-grid" id="tcRecGrid"></div>
       </div>
+
+      <div class="form-row">
+        <div class="field">
+          <label>Course code</label>
+          <input class="input mono" id="tcCode" placeholder="e.g. ECE-2103" list="tcRecCodeList">
+          <datalist id="tcRecCodeList"></datalist>
+        </div>
+        <div class="field">
+          <label>Credit hours</label>
+          <input class="input" type="number" id="tcCredit" value="3" step="0.25">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Course title</label>
+        <input class="input" id="tcName" placeholder="e.g. Data Structure & Algorithms" list="tcRecNameList">
+        <datalist id="tcRecNameList"></datalist>
+      </div>
+
       <div class="field"><label>Enroll students</label>
         <div class="filters" style="margin-bottom:8px">
           <button type="button" class="subtle-btn" onclick="toggleAllTcStudents(true)">Select all</button>
           <button type="button" class="subtle-btn" onclick="toggleAllTcStudents(false)">Clear</button>
         </div>
-        <div class="checklist" id="tcStudentPicker" style="max-height:220px;overflow:auto"></div>
+        <div class="checklist" id="tcStudentPicker" style="max-height:170px;overflow:auto"></div>
       </div>
     </div>
-    <div class="modal-actions"><button class="ghost-btn" onclick="closeModal()">Cancel</button><button class="primary-btn" onclick="createTeacherCourse()">${ICONS.check} Create course</button></div>
+    <div class="modal-actions">
+      <button class="ghost-btn" onclick="closeModal()">Cancel</button>
+      <button class="primary-btn" onclick="createTeacherCourse()">${ICONS.check} Create course</button>
+    </div>
   `, true);
-  await renderTeacherCourseStudentPicker();
+
+  onTeacherCourseSeriesChange();
+}
+
+function onTeacherCourseSeriesChange(){
+  const s = document.getElementById('tcSeries').value;
+  const sConf = SERIES_SEMESTER_MAP[s] || { defaultSem: 1, primarySemesters: [1, 2] };
+  const semSelect = document.getElementById('tcSemester');
+
+  let html = '';
+  html += `<optgroup label="Current Semesters for ${s} Series">`;
+  sConf.primarySemesters.forEach(semNum => {
+    const semData = RUET_ECE_ALL_SEMESTERS[semNum];
+    if (semData) {
+      html += `<option value="${semNum}" ${semNum === sConf.defaultSem ? 'selected' : ''}>${semData.term}</option>`;
+    }
+  });
+  html += `</optgroup>`;
+
+  const otherSemesters = [1, 2, 3, 4, 5, 6, 7, 8].filter(num => !sConf.primarySemesters.includes(num));
+  if (otherSemesters.length > 0) {
+    html += `<optgroup label="All Other Semesters (Retake / Backlog)">`;
+    otherSemesters.forEach(semNum => {
+      const semData = RUET_ECE_ALL_SEMESTERS[semNum];
+      if (semData) {
+        html += `<option value="${semNum}">${semData.term}</option>`;
+      }
+    });
+    html += `</optgroup>`;
+  }
+
+  semSelect.innerHTML = html;
+  onTeacherCourseSemesterChange();
+  renderTeacherCourseStudentPicker();
+}
+
+function onTeacherCourseSemesterChange(){
+  const s = document.getElementById('tcSeries').value;
+  const sem = Number(document.getElementById('tcSemester').value) || 1;
+  const semData = RUET_ECE_ALL_SEMESTERS[sem];
+  const courses = semData?.courses || [];
+
+  const recBox = document.getElementById('tcRecBox');
+  const recGrid = document.getElementById('tcRecGrid');
+  const recTitle = document.getElementById('tcRecTitle');
+  const codeList = document.getElementById('tcRecCodeList');
+  const nameList = document.getElementById('tcRecNameList');
+
+  if(courses.length > 0){
+    recBox.style.display = 'block';
+    recTitle.innerHTML = `💡 Suggested Courses for ${s} Series — ${semData.term}:`;
+    recGrid.innerHTML = courses.map(c => `
+      <div class="rec-card" onclick="selectTeacherRecommendedCourse('${c.code}', '${escapeHtml(c.title).replace(/'/g, "\\'")}', ${c.credits}, this)">
+        <div class="rec-card-top">
+          <span class="rec-card-code">${c.code}</span>
+          <span class="rec-card-badge">${c.type}</span>
+        </div>
+        <div class="rec-card-title" title="${escapeHtml(c.title)}">${escapeHtml(c.title)}</div>
+        <div class="rec-card-meta">${c.credits} Credits</div>
+      </div>
+    `).join('');
+
+    codeList.innerHTML = courses.map(c => `<option value="${c.code}">${escapeHtml(c.title)}</option>`).join('');
+    nameList.innerHTML = courses.map(c => `<option value="${escapeHtml(c.title)}">${c.code}</option>`).join('');
+  } else {
+    recBox.style.display = 'none';
+    codeList.innerHTML = '';
+    nameList.innerHTML = '';
+  }
+}
+
+function selectTeacherRecommendedCourse(code, title, credits, el){
+  document.getElementById('tcCode').value = code;
+  document.getElementById('tcName').value = title;
+  document.getElementById('tcCredit').value = credits;
+
+  document.querySelectorAll('#tcRecGrid .rec-card').forEach(c => c.classList.remove('active'));
+  if(el) el.classList.add('active');
+  showToast(`Selected ${code}: ${title}`, 'info');
 }
 
 async function renderTeacherCourseStudentPicker(){
@@ -858,6 +974,7 @@ async function createTeacherCourse(){
   const code = document.getElementById('tcCode').value.trim().toUpperCase();
   const name = document.getElementById('tcName').value.trim();
   const series = document.getElementById('tcSeries').value;
+  const semester = Number(document.getElementById('tcSemester')?.value) || 1;
   const credit = Number(document.getElementById('tcCredit').value)||3;
   const enrolledStudentIds = [...document.querySelectorAll('.tcStudentChk:checked')].map(c=>c.value);
 
@@ -868,6 +985,7 @@ async function createTeacherCourse(){
     code,
     name,
     series,
+    semester,
     creditHours: credit,
     teacherId: SESSION.linkedId,
     enrolledStudentIds
@@ -875,7 +993,7 @@ async function createTeacherCourse(){
 
   if(!res.ok){ showToast(res.msg || 'Failed to create course.', 'error'); return; }
   closeModal();
-  showToast('Course created in database.', 'success');
+  showToast(`Course ${code} created and assigned to you!`, 'success');
   navigate('courses');
 }
 
@@ -1646,7 +1764,6 @@ async function renderAdminCourses(wrap){
   wrap.innerHTML = `
     <div class="hero"><div><h1>Courses</h1><p>Create courses and assign teachers per series & semester.</p></div>
       <div class="hero-actions">
-        <button class="secondary-btn" onclick="populateOfficialCourses()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Populate RUET Syllabus</button>
         <button class="danger-btn ghost" onclick="openDeleteAllCoursesModal()">${ICONS.trash} Delete all courses</button>
         <button class="accent-btn" onclick="openAddCourseModal()">${ICONS.plus} Add course</button>
       </div></div>
@@ -1656,18 +1773,6 @@ async function renderAdminCourses(wrap){
     </div>
   `;
   await renderCourseTable();
-}
-
-async function populateOfficialCourses(){
-  const confirmed = confirm("Do you want to automatically add the official RUET ECE syllabus courses for each active Series into the database?");
-  if(!confirmed) return;
-  const res = await api.post('/courses/populate-official', { series: 'all' });
-  if(res.ok){
-    showToast(res.msg || `Added ${res.count} courses!`, 'success');
-    await renderCourseTable();
-  } else {
-    showToast(res.msg || 'Failed to populate courses.', 'error');
-  }
 }
 
 async function renderCourseTable(){
