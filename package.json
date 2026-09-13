@@ -1,0 +1,18 @@
+{
+  "name": "ece-attendance-system",
+  "version": "1.0.0",
+  "description": "ECE Department Attendance Management System with REST API and SQLite Database",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
+    "jszip": "^3.10.2",
+    "xlsx": "^0.18.5"
+  }
+}
