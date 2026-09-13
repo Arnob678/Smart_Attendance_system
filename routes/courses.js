@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDB, SERIES_SEMESTER } = require('../db/database');
-const { getRecommendations } = require('../data/curriculum');
+const { RUET_ECE_ALL_SEMESTERS, SERIES_SEMESTER_MAP, getRecommendations } = require('../data/curriculum');
 
 // GET /api/courses/recommendations?series=...&semester=...
 router.get('/recommendations', (req, res) => {
@@ -252,6 +252,56 @@ router.post('/delete-all', (req, res) => {
   } catch (e) {
     db.exec('ROLLBACK;');
     return res.status(500).json({ ok: false, msg: 'Failed to delete courses: ' + e.message });
+  }
+});
+
+// POST /api/courses/populate-official (Auto-populate official RUET ECE syllabus courses)
+router.post('/populate-official', (req, res) => {
+  const { series: targetSeries } = req.body;
+  const db = getDB();
+
+  const teachers = db.prepare("SELECT id FROM teachers WHERE status = 'approved'").all();
+  let tIdx = 0;
+
+  db.exec('BEGIN TRANSACTION;');
+  try {
+    let seriesToProcess = [];
+    if (targetSeries && targetSeries !== 'all') {
+      seriesToProcess = [String(targetSeries)];
+    } else {
+      seriesToProcess = ['25', '24', '23', '22', '21'];
+    }
+
+    let addedCount = 0;
+    const insCourse = db.prepare(`
+      INSERT INTO courses (code, name, series, semester, teacherId, creditHours, enrolledStudentIds)
+      VALUES (?, ?, ?, ?, ?, ?, NULL)
+    `);
+
+    for (const sCode of seriesToProcess) {
+      const sConf = SERIES_SEMESTER_MAP[sCode];
+      if (!sConf) continue;
+      const semNum = sConf.defaultSem;
+      const semData = RUET_ECE_ALL_SEMESTERS[semNum];
+      if (!semData || !semData.courses) continue;
+
+      for (const course of semData.courses) {
+        const cleanCode = course.code.trim().toUpperCase();
+        const existing = db.prepare('SELECT code FROM courses WHERE code = ?').get(cleanCode);
+        if (!existing) {
+          const assignedTeacher = teachers.length > 0 ? teachers[tIdx % teachers.length].id : null;
+          tIdx++;
+          insCourse.run(cleanCode, course.title, sCode, semNum, assignedTeacher, course.credits);
+          addedCount++;
+        }
+      }
+    }
+
+    db.exec('COMMIT;');
+    return res.json({ ok: true, msg: `Successfully populated ${addedCount} official RUET ECE courses.`, count: addedCount });
+  } catch (e) {
+    db.exec('ROLLBACK;');
+    return res.status(500).json({ ok: false, msg: 'Failed to populate courses: ' + e.message });
   }
 });
 

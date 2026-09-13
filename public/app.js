@@ -1646,6 +1646,7 @@ async function renderAdminCourses(wrap){
   wrap.innerHTML = `
     <div class="hero"><div><h1>Courses</h1><p>Create courses and assign teachers per series & semester.</p></div>
       <div class="hero-actions">
+        <button class="secondary-btn" onclick="populateOfficialCourses()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Populate RUET Syllabus</button>
         <button class="danger-btn ghost" onclick="openDeleteAllCoursesModal()">${ICONS.trash} Delete all courses</button>
         <button class="accent-btn" onclick="openAddCourseModal()">${ICONS.plus} Add course</button>
       </div></div>
@@ -1655,6 +1656,18 @@ async function renderAdminCourses(wrap){
     </div>
   `;
   await renderCourseTable();
+}
+
+async function populateOfficialCourses(){
+  const confirmed = confirm("Do you want to automatically add the official RUET ECE syllabus courses for each active Series into the database?");
+  if(!confirmed) return;
+  const res = await api.post('/courses/populate-official', { series: 'all' });
+  if(res.ok){
+    showToast(res.msg || `Added ${res.count} courses!`, 'success');
+    await renderCourseTable();
+  } else {
+    showToast(res.msg || 'Failed to populate courses.', 'error');
+  }
 }
 
 async function renderCourseTable(){
