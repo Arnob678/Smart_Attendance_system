@@ -809,6 +809,7 @@ async function teacherDeleteCourse(code){
   if(!confirm(`Delete ${code}? All its sessions and attendance records in SQLite will also be deleted. This cannot be undone.`)) return;
   const res = await api.del('/courses/' + code);
   if(!res.ok){ showToast(res.msg || 'Failed to delete course.', 'error'); return; }
+  removePersistedCourse(code);
   closeModal();
   showToast('Course deleted from database.', 'success');
   navigate('courses');
@@ -982,7 +983,6 @@ async function createTeacherCourse(){
   const enrolledStudentIds = [...document.querySelectorAll('.tcStudentChk:checked')].map(c=>c.value);
 
   if(!code || !name){ showToast('Course code and title are required.', 'error'); return; }
-  if(enrolledStudentIds.length===0){ showToast('Select at least one student to enroll.', 'error'); return; }
 
   const res = await api.post('/courses', {
     code,
@@ -991,11 +991,11 @@ async function createTeacherCourse(){
     semester,
     creditHours: credit,
     teacherId: SESSION.linkedId,
-    enrolledStudentIds
+    enrolledStudentIds: enrolledStudentIds.length > 0 ? enrolledStudentIds : null
   });
 
   if(!res.ok){ showToast(res.msg || 'Failed to create course.', 'error'); return; }
-  savePersistedCourse({ code, name, series, semester, creditHours: credit, teacherId: SESSION.linkedId, enrolledStudentIds });
+  savePersistedCourse({ code, name, series, semester, creditHours: credit, teacherId: SESSION.linkedId, enrolledStudentIds: enrolledStudentIds.length > 0 ? enrolledStudentIds : null });
   closeModal();
   showToast(`Course ${code} created and assigned to you!`, 'success');
   navigate('courses');
@@ -2132,12 +2132,32 @@ function selectRecommendedCourse(code, title, credits, el){
   showToast(`Auto-filled ${code}!`, 'info');
 }
 
+function markCourseDeleted(code){
+  try {
+    const raw = localStorage.getItem('ece_deleted_courses');
+    let list = raw ? JSON.parse(raw) : [];
+    if(!Array.isArray(list)) list = [];
+    const uc = code.toUpperCase();
+    if(!list.includes(uc)) list.push(uc);
+    localStorage.setItem('ece_deleted_courses', JSON.stringify(list));
+  } catch(e){}
+}
+
 function savePersistedCourse(courseObj){
   try {
+    const uc = courseObj.code.toUpperCase();
+    const rawDel = localStorage.getItem('ece_deleted_courses');
+    if(rawDel){
+      let delList = JSON.parse(rawDel);
+      if(Array.isArray(delList)){
+        delList = delList.filter(c => c !== uc);
+        localStorage.setItem('ece_deleted_courses', JSON.stringify(delList));
+      }
+    }
     const raw = localStorage.getItem('ece_persisted_courses');
     let list = raw ? JSON.parse(raw) : [];
     if(!Array.isArray(list)) list = [];
-    list = list.filter(c => c.code.toUpperCase() !== courseObj.code.toUpperCase());
+    list = list.filter(c => c.code.toUpperCase() !== uc);
     list.push(courseObj);
     localStorage.setItem('ece_persisted_courses', JSON.stringify(list));
   } catch(e){}
@@ -2145,6 +2165,7 @@ function savePersistedCourse(courseObj){
 
 function removePersistedCourse(code){
   try {
+    markCourseDeleted(code);
     const raw = localStorage.getItem('ece_persisted_courses');
     if(!raw) return;
     let list = JSON.parse(raw);
@@ -2156,17 +2177,24 @@ function removePersistedCourse(code){
 
 async function rehydratePersistedCourses(){
   try {
+    const deletedRaw = localStorage.getItem('ece_deleted_courses');
+    let deletedSet = new Set(deletedRaw ? JSON.parse(deletedRaw) : []);
+    deletedSet.add('ECE-2105');
+
     const raw = localStorage.getItem('ece_persisted_courses');
     if(!raw) return;
-    const list = JSON.parse(raw);
+    let list = JSON.parse(raw);
     if(!Array.isArray(list) || list.length === 0) return;
+
+    list = list.filter(c => c && c.code && !deletedSet.has(c.code.toUpperCase()));
+    localStorage.setItem('ece_persisted_courses', JSON.stringify(list));
 
     const res = await api.get('/courses');
     if(!res.ok || !res.courses) return;
     const existing = new Set(res.courses.map(c => c.code.toUpperCase()));
 
     for(const c of list){
-      if(c && c.code && !existing.has(c.code.toUpperCase())){
+      if(c && c.code && !existing.has(c.code.toUpperCase()) && !deletedSet.has(c.code.toUpperCase())){
         await api.post('/courses', c);
         existing.add(c.code.toUpperCase());
       }

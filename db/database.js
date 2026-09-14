@@ -400,30 +400,6 @@ function ensureEssentialRecords(database) {
     } else {
       updUser.run('student', '01130261', arnobSid, 'active', 'Nabil Ahmed Arnob', arnobU.id);
     }
-
-    // 4. Ensure Courses (ECE-2105 & ECE-2103)
-    const courseStmt = d.prepare('SELECT code, teacherId, enrolledStudentIds FROM courses WHERE code = ?');
-    const insCourse = d.prepare('INSERT INTO courses (code, name, series, semester, teacherId, creditHours, enrolledStudentIds) VALUES (?, ?, ?, ?, ?, ?, ?)');
-    const updCourseTeacher = d.prepare('UPDATE courses SET teacherId = ?, enrolledStudentIds = COALESCE(?, enrolledStudentIds) WHERE code = ?');
-
-    // Fetch Series 24 students for enrollment list
-    const s24Rows = d.prepare("SELECT id FROM students WHERE series = '24' ORDER BY rollNo ASC").all();
-    const s24Ids = s24Rows.map(r => r.id);
-    const enrolledJson = s24Ids.length > 0 ? JSON.stringify(s24Ids) : null;
-
-    const c2105 = courseStmt.get('ECE-2105');
-    if (!c2105) {
-      insCourse.run('ECE-2105', 'Analog Electronics and Sessional', '24', 3, moloyTid, 3, enrolledJson);
-    } else if (!c2105.teacherId || !c2105.enrolledStudentIds) {
-      updCourseTeacher.run(moloyTid, enrolledJson, 'ECE-2105');
-    }
-
-    const c2103 = courseStmt.get('ECE-2103');
-    if (!c2103) {
-      insCourse.run('ECE-2103', 'Data structure and Algorithm', '24', 3, faisalTid, 3, enrolledJson);
-    } else if (!c2103.teacherId || !c2103.enrolledStudentIds) {
-      updCourseTeacher.run(faisalTid, enrolledJson, 'ECE-2103');
-    }
   } catch (err) {
     console.error('Error in ensureEssentialRecords:', err);
   }
