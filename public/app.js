@@ -1088,11 +1088,75 @@ async function changeOwnPassword(inputId){
 /* ============================================================
    STUDENT: DASHBOARD, TODAY, HISTORY, COURSES, PROFILE
    ============================================================ */
+let STUDENT_DASHBOARD_DATA = null;
+
+function renderStudentStatCards(stats, courseObj){
+  const isCourse = !!courseObj;
+  const title1 = isCourse ? `${courseObj.course.code} attendance` : 'Overall attendance';
+  const sub1 = stats.pct >= SYSTEM_SETTINGS.threshold
+    ? `<span class="good">Above ${SYSTEM_SETTINGS.threshold}% threshold</span>`
+    : `<span class="bad">Below ${SYSTEM_SETTINGS.threshold}% threshold</span>`;
+
+  const title2 = 'Classes attended';
+  const sub2 = isCourse
+    ? `of ${stats.total} conducted in ${courseObj.course.code}`
+    : `of ${stats.total} conducted`;
+
+  const title3 = 'Absences';
+  const sub3 = isCourse ? `Missed in ${courseObj.course.code}` : `Across all courses`;
+
+  const title4 = 'Attendance marks';
+  let sub4 = 'Per department scheme';
+  if(isCourse && courseObj.bunk){
+    if(courseObj.total === 0){
+      sub4 = 'No classes conducted yet';
+    } else if(courseObj.bunk.type === 'buffer'){
+      sub4 = courseObj.bunk.count > 0
+        ? `Can miss ${courseObj.bunk.count} more for full marks`
+        : `No buffer left for 10/10`;
+    } else {
+      sub4 = `Attend next ${courseObj.bunk.count} in a row for 10/10`;
+    }
+  }
+
+  return `
+    <div class="card stat"><div class="stat-top"><span>${title1}</span><div class="icon-box copper">${ICONS.percent}</div></div>
+      <div class="stat-value">${stats.pct.toFixed(1)}%</div>
+      <div class="stat-sub">${sub1}</div></div>
+    <div class="card stat"><div class="stat-top"><span>${title2}</span><div class="icon-box teal">${ICONS.check}</div></div>
+      <div class="stat-value">${stats.present + stats.late}</div><div class="stat-sub">${sub2}</div></div>
+    <div class="card stat"><div class="stat-top"><span>${title3}</span><div class="icon-box danger">${ICONS.x}</div></div>
+      <div class="stat-value">${stats.absent}</div><div class="stat-sub">${sub3}</div></div>
+    <div class="card stat"><div class="stat-top"><span>${title4}</span><div class="icon-box amber">${ICONS.reports}</div></div>
+      <div class="stat-value">${stats.marks}<span style="font-size:14px;color:var(--text-faint)">/10</span></div>
+      <div class="stat-sub">${sub4}</div></div>
+  `;
+}
+
+function updateStudentDashboardCourseStats(){
+  if(!STUDENT_DASHBOARD_DATA) return;
+  const sel = document.getElementById('stuDashCourseSelect').value;
+  const { overall, courses } = STUDENT_DASHBOARD_DATA;
+  const grid = document.getElementById('stuDashStatsGrid');
+  const hint = document.getElementById('stuDashCourseEvaluationHint');
+  if(sel === 'all'){
+    grid.innerHTML = renderStudentStatCards(overall, null);
+    if(hint) hint.textContent = `Viewing overall evaluation across all ${courses.length} courses`;
+  } else {
+    const c = courses.find(x => x.course.code === sel);
+    if(c){
+      grid.innerHTML = renderStudentStatCards(c, c);
+      if(hint) hint.innerHTML = `Viewing evaluation for <b>${c.course.code}</b> (${escapeHtml(c.teacherName)})`;
+    }
+  }
+}
+
 async function renderStudentDashboard(wrap){
   const sid = SESSION.linkedId;
   const res = await api.get('/students/' + sid);
   if(!res.ok){ wrap.innerHTML = `<div class="empty"><strong>Error loading student data</strong></div>`; return; }
   const { student, overall, courses } = res;
+  STUDENT_DASHBOARD_DATA = { student, overall, courses };
 
   const todayIso = todayISO();
   const todaySessRes = await api.get('/attendance/history', { series: student.series, from: todayIso, to: todayIso });
@@ -1108,17 +1172,19 @@ async function renderStudentDashboard(wrap){
       </div>
     </div>
 
-    <div class="grid stats">
-      <div class="card stat"><div class="stat-top"><span>Overall attendance</span><div class="icon-box copper">${ICONS.percent}</div></div>
-        <div class="stat-value">${overall.pct.toFixed(1)}%</div>
-        <div class="stat-sub ${overall.pct >= SYSTEM_SETTINGS.threshold ? 'good' : 'bad'}">${overall.pct >= SYSTEM_SETTINGS.threshold ? 'Above' : 'Below'} ${SYSTEM_SETTINGS.threshold}% threshold</div></div>
-      <div class="card stat"><div class="stat-top"><span>Classes attended</span><div class="icon-box teal">${ICONS.check}</div></div>
-        <div class="stat-value">${overall.present + overall.late}</div><div class="stat-sub">of ${overall.total} conducted</div></div>
-      <div class="card stat"><div class="stat-top"><span>Absences</span><div class="icon-box danger">${ICONS.x}</div></div>
-        <div class="stat-value">${overall.absent}</div><div class="stat-sub">Across all courses</div></div>
-      <div class="card stat"><div class="stat-top"><span>Attendance marks</span><div class="icon-box amber">${ICONS.reports}</div></div>
-        <div class="stat-value">${overall.marks}<span style="font-size:14px;color:var(--text-faint)">/10</span></div>
-        <div class="stat-sub">Per department scheme</div></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:0 0 14px 0;gap:12px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px">
+        <label for="stuDashCourseSelect" style="font-size:13px;font-weight:600;color:var(--text-dim)">Course evaluation:</label>
+        <select class="select" id="stuDashCourseSelect" onchange="updateStudentDashboardCourseStats()" style="min-width:270px">
+          <option value="all">All courses (Overall department attendance)</option>
+          ${courses.map(c=>`<option value="${c.course.code}">${c.course.code} — ${escapeHtml(c.course.name)}</option>`).join('')}
+        </select>
+      </div>
+      <div id="stuDashCourseEvaluationHint" style="font-size:12.5px;color:var(--text-faint)">Viewing overall evaluation across all ${courses.length} courses</div>
+    </div>
+
+    <div class="grid stats" id="stuDashStatsGrid">
+      ${renderStudentStatCards(overall, null)}
     </div>
 
     <div class="grid two-col" style="margin-top:16px">
@@ -1176,11 +1242,14 @@ async function renderStudentToday(wrap){
   `;
 }
 
+let STUDENT_HISTORY_DATA = null;
+
 async function renderStudentHistory(wrap){
   const sid = SESSION.linkedId;
   const studentRes = await api.get('/students/' + sid);
   if(!studentRes.ok) return;
-  const { student, courses } = studentRes;
+  const { student, courses, overall } = studentRes;
+  STUDENT_HISTORY_DATA = { student, courses, overall };
 
   wrap.innerHTML = `
     <div class="hero"><div><h1>Attendance history</h1><p>Full record across every course you're enrolled in.</p></div></div>
@@ -1189,7 +1258,8 @@ async function renderStudentHistory(wrap){
         <select class="select" id="stCourseFilter" onchange="fetchStudentHistoryTable('${sid}')"><option value="all">All courses</option>${courses.map(c=>`<option value="${c.course.code}">${c.course.code} — ${escapeHtml(c.course.name)}</option>`).join('')}</select>
         <select class="select" id="stStatusFilter" onchange="fetchStudentHistoryTable('${sid}')"><option value="all">Any status</option><option value="present">Present</option><option value="absent">Absent</option><option value="late">Late</option></select>
       </div>
-      <div class="table-wrap" id="stHistWrap"></div>
+      <div id="stHistEvaluationBanner" style="margin-top:14px"></div>
+      <div class="table-wrap" id="stHistWrap" style="margin-top:10px"></div>
     </div>
   `;
   await fetchStudentHistoryTable(sid);
@@ -1198,6 +1268,64 @@ async function renderStudentHistory(wrap){
 async function fetchStudentHistoryTable(sid){
   const cf = document.getElementById('stCourseFilter').value;
   const sf = document.getElementById('stStatusFilter').value;
+
+  // Update evaluation & attendance marks banner
+  const evalBanner = document.getElementById('stHistEvaluationBanner');
+  if(evalBanner && STUDENT_HISTORY_DATA){
+    const { courses, overall } = STUDENT_HISTORY_DATA;
+    if(cf !== 'all'){
+      const c = courses.find(x => x.course.code === cf);
+      if(c){
+        const bunkMsg = c.total === 0 ? 'No classes conducted yet' :
+          (c.bunk && c.bunk.type === 'buffer'
+            ? (c.bunk.count > 0 ? `Can miss ${c.bunk.count} more class${c.bunk.count !== 1 ? 'es' : ''} and keep full marks (10/10)` : `No buffer left for 10/10`)
+            : `Attend your next ${c.bunk ? c.bunk.count : 0} class${(c.bunk && c.bunk.count !== 1) ? 'es' : ''} in a row for full marks`);
+        evalBanner.innerHTML = `
+          <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px">
+            <div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <strong style="font-size:15px">${c.course.code} — ${escapeHtml(c.course.name)}</strong>
+                <span class="badge ${c.pct >= SYSTEM_SETTINGS.threshold ? 'present' : 'absent'}">${c.pct.toFixed(1)}% attendance</span>
+              </div>
+              <div class="muted" style="font-size:12.5px;margin-top:4px">Teacher: <b>${escapeHtml(c.teacherName)}</b> · ${c.present + c.late} attended of ${c.total} conducted · ${c.absent} absences</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:16px">
+              <div style="text-align:right">
+                <div style="font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;font-weight:700">Course Marks</div>
+                <div style="font-size:24px;font-weight:800;color:var(--amber);line-height:1.1">${c.marks}<span style="font-size:13px;color:var(--text-faint);font-weight:500"> / 10</span></div>
+              </div>
+              <div style="font-size:12px;padding:7px 12px;border-radius:8px;background:var(--surface);border:1px solid var(--border)">
+                <div style="font-weight:700">Scheme 14.2</div>
+                <div class="muted" style="font-size:11px">${bunkMsg}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    } else if(overall){
+      evalBanner.innerHTML = `
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px">
+          <div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <strong style="font-size:15px">All Enrolled Courses</strong>
+              <span class="badge ${overall.pct >= SYSTEM_SETTINGS.threshold ? 'present' : 'absent'}">${overall.pct.toFixed(1)}% Overall</span>
+            </div>
+            <div class="muted" style="font-size:12.5px;margin-top:4px">Total: ${overall.present + overall.late} attended of ${overall.total} conducted · ${overall.absent} absences across all courses</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px">
+            <div style="text-align:right">
+              <div style="font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;font-weight:700">Overall Marks</div>
+              <div style="font-size:24px;font-weight:800;color:var(--amber);line-height:1.1">${overall.marks}<span style="font-size:13px;color:var(--text-faint);font-weight:500"> / 10</span></div>
+            </div>
+            <div style="font-size:12px;padding:7px 12px;border-radius:8px;background:var(--surface);border:1px solid var(--border)">
+              <div style="font-weight:700">Scheme 14.2</div>
+              <div class="muted" style="font-size:11px">Select a specific course above to see individual course marks</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+  }
 
   const res = await api.get('/attendance/history', { series: SESSION.student?.series, courseCode: cf });
   const sessions = (res.ok && res.sessions) ? res.sessions : [];
@@ -1214,9 +1342,25 @@ async function fetchStudentHistoryTable(sid){
   }
 
   document.getElementById('stHistWrap').innerHTML = records.length ? `
-    <table class="table"><thead><tr><th>Date</th><th>Course</th><th>Status</th><th>Marked at</th><th>Remarks</th></tr></thead><tbody>
-    ${records.map(r=>`<tr><td>${fmtDate(r.session.date)}</td><td class="mono">${r.session.courseCode}</td>
-      <td><span class="badge ${r.status}">${r.status}</span></td><td>${fmtTime(r.timestamp)}</td><td class="muted">${escapeHtml(r.remarks||'—')}</td></tr>`).join('')}
+    <table class="table"><thead><tr><th>Date</th><th>Course</th><th>Status</th><th>Marks</th><th>Marked at</th><th>Remarks</th></tr></thead><tbody>
+    ${records.map(r=>{
+      const markBadge = r.status === 'present'
+        ? '<span class="badge present" style="font-weight:700">+1.0 pt</span>'
+        : r.status === 'late'
+          ? '<span class="badge late" style="font-weight:700">+1.0 pt</span>'
+          : '<span class="badge absent" style="font-weight:700">0.0 pt</span>';
+      const remarkText = (r.remarks && r.remarks.trim() !== '')
+        ? escapeHtml(r.remarks)
+        : (r.status === 'present' ? '<span class="muted">Attended class</span>' : r.status === 'late' ? '<span class="muted">Attended (Late)</span>' : '<span class="muted">Unexcused absence</span>');
+      return `<tr>
+        <td>${fmtDate(r.session.date)}</td>
+        <td class="mono"><strong>${r.session.courseCode}</strong></td>
+        <td><span class="badge ${r.status}">${r.status}</span></td>
+        <td>${markBadge}</td>
+        <td>${fmtTime(r.timestamp)}</td>
+        <td>${remarkText}</td>
+      </tr>`;
+    }).join('')}
     </tbody></table>` : `<div class="empty"><strong>No records</strong>Nothing matches these filters yet.</div>`;
 }
 
