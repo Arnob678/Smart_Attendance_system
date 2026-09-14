@@ -1,13 +1,30 @@
 const { DatabaseSync } = require('node:sqlite');
+const os = require('os');
 const path = require('path');
 const fs = require('fs');
 
-const DB_PATH = path.join(__dirname, '..', 'attendance.db');
+const SEED_DB_PATH = path.join(__dirname, '..', 'attendance.db');
+const DB_PATH = process.env.VERCEL
+  ? path.join(os.tmpdir(), 'attendance.db')
+  : SEED_DB_PATH;
 
 let db = null;
 
 function getDB() {
   if (!db) {
+    if (process.env.VERCEL) {
+      const tmpDir = path.dirname(DB_PATH);
+      if (!fs.existsSync(tmpDir)) {
+        fs.mkdirSync(tmpDir, { recursive: true });
+      }
+      if (!fs.existsSync(DB_PATH) && fs.existsSync(SEED_DB_PATH)) {
+        try {
+          fs.copyFileSync(SEED_DB_PATH, DB_PATH);
+        } catch (e) {
+          console.error('Failed to copy seed database to tmpdir:', e);
+        }
+      }
+    }
     db = new DatabaseSync(DB_PATH);
     db.exec('PRAGMA journal_mode = WAL;');
     db.exec('PRAGMA synchronous = NORMAL;');
@@ -155,36 +172,14 @@ const SERIES_LIST = ['21', '22', '23', '24', '25'];
 const SERIES_SEMESTER = { 25: 1, 24: 3, 23: 4, 22: 6, 21: 8 };
 
 const COURSE_CATALOG = {
-  25: [
-    { code: 'ECE-1101', name: 'Circuit Theory I' },
-    { code: 'ECE-1102', name: 'Physics for Engineers' },
-    { code: 'ECE-1103', name: 'Structured Programming' },
-    { code: 'ECE-1104', name: 'Engineering Mathematics I' },
-  ],
+  25: [],
   24: [
-    { code: 'ECE-1201', name: 'Circuit Theory II' },
-    { code: 'ECE-1202', name: 'Electronics I' },
-    { code: 'ECE-1203', name: 'Engineering Drawing & CAD' },
-    { code: 'ECE-1204', name: 'Differential Equations' },
+    { code: 'ECE-2103', name: 'Data structure and Algorithm' },
+    { code: 'ECE-2105', name: 'Analog Electronics and Sessional' },
   ],
-  23: [
-    { code: 'ECE-2401', name: 'Electronic Devices & Circuits II' },
-    { code: 'ECE-2402', name: 'Electromagnetic Fields' },
-    { code: 'ECE-2403', name: 'Electrical Machines I' },
-    { code: 'ECE-2404', name: 'Numerical Methods' },
-  ],
-  22: [
-    { code: 'ECE-3601', name: 'Microprocessor & Interfacing' },
-    { code: 'ECE-3602', name: 'Digital Signal Processing' },
-    { code: 'ECE-3603', name: 'Control Systems' },
-    { code: 'ECE-3604', name: 'Power Electronics' },
-  ],
-  21: [
-    { code: 'ECE-4801', name: 'Power System Protection' },
-    { code: 'ECE-4802', name: 'VLSI Design' },
-    { code: 'ECE-4803', name: 'Wireless Communication' },
-    { code: 'ECE-4809', name: 'Thesis / Capstone Project' },
-  ],
+  23: [],
+  22: [],
+  21: []
 };
 
 const TEACHER_SEED = [

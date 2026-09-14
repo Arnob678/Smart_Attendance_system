@@ -96,11 +96,15 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Start Server
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`===================================================`);
-  console.log(` ECE Attendance Server running at:`);
-  console.log(` Local:   http://localhost:${PORT}`);
-  console.log(` Network: http://0.0.0.0:${PORT} (accessible from mobile)`);
-  console.log(`===================================================`);
-});
+// Start Server when run directly (local development or persistent server)
+if (require.main === module) {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`===================================================`);
+    console.log(` ECE Attendance Server running at:`);
+    console.log(` Local:   http://localhost:${PORT}`);
+    console.log(` Network: http://0.0.0.0:${PORT} (accessible from mobile)`);
+    console.log(`===================================================`);
+  });
+}
+
+module.exports = app;
