@@ -152,15 +152,21 @@ router.post('/', (req, res) => {
   const cleanCode = code.trim().toUpperCase();
   const db = getDB();
 
-  const existing = db.prepare('SELECT * FROM courses WHERE code = ?').get(cleanCode);
-  if (existing) {
-    return res.status(400).json({ ok: false, msg: 'Course code already exists.' });
-  }
-
   const courseSemester = semester ? Number(semester) : (SERIES_SEMESTER[series] || 1);
   const enrolledJson = (Array.isArray(enrolledStudentIds) && enrolledStudentIds.length > 0)
     ? JSON.stringify(enrolledStudentIds)
     : null;
+
+  const existing = db.prepare('SELECT * FROM courses WHERE code = ?').get(cleanCode);
+  if (existing) {
+    if (teacherId && !existing.teacherId) {
+      db.prepare('UPDATE courses SET teacherId = ? WHERE code = ?').run(teacherId, cleanCode);
+    }
+    if (enrolledJson && !existing.enrolledStudentIds) {
+      db.prepare('UPDATE courses SET enrolledStudentIds = ? WHERE code = ?').run(enrolledJson, cleanCode);
+    }
+    return res.json({ ok: true, msg: 'Course already exists.', code: cleanCode, existed: true });
+  }
 
   db.prepare(`
     INSERT INTO courses (code, name, series, semester, teacherId, creditHours, enrolledStudentIds)

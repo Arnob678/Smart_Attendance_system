@@ -349,6 +349,9 @@ async function navigate(page){
   const content = document.getElementById('content');
   content.innerHTML = '<div class="page active" id="pageWrap"><div class="empty"><strong>Loading...</strong>Fetching latest data from server.</div></div>';
   const wrap = document.getElementById('pageWrap');
+  if(page === 'dashboard' || page === 'courses' || page === 'series'){
+    await rehydratePersistedCourses();
+  }
 
   if(SESSION.role==='teacher'){
     if(page==='dashboard') await renderTeacherDashboard(wrap);
@@ -992,6 +995,7 @@ async function createTeacherCourse(){
   });
 
   if(!res.ok){ showToast(res.msg || 'Failed to create course.', 'error'); return; }
+  savePersistedCourse({ code, name, series, semester, creditHours: credit, teacherId: SESSION.linkedId, enrolledStudentIds });
   closeModal();
   showToast(`Course ${code} created and assigned to you!`, 'success');
   navigate('courses');
@@ -2124,6 +2128,50 @@ function selectRecommendedCourse(code, title, credits, el){
   showToast(`Auto-filled ${code}!`, 'info');
 }
 
+function savePersistedCourse(courseObj){
+  try {
+    const raw = localStorage.getItem('ece_persisted_courses');
+    let list = raw ? JSON.parse(raw) : [];
+    if(!Array.isArray(list)) list = [];
+    list = list.filter(c => c.code.toUpperCase() !== courseObj.code.toUpperCase());
+    list.push(courseObj);
+    localStorage.setItem('ece_persisted_courses', JSON.stringify(list));
+  } catch(e){}
+}
+
+function removePersistedCourse(code){
+  try {
+    const raw = localStorage.getItem('ece_persisted_courses');
+    if(!raw) return;
+    let list = JSON.parse(raw);
+    if(!Array.isArray(list)) return;
+    list = list.filter(c => c.code.toUpperCase() !== code.toUpperCase());
+    localStorage.setItem('ece_persisted_courses', JSON.stringify(list));
+  } catch(e){}
+}
+
+async function rehydratePersistedCourses(){
+  try {
+    const raw = localStorage.getItem('ece_persisted_courses');
+    if(!raw) return;
+    const list = JSON.parse(raw);
+    if(!Array.isArray(list) || list.length === 0) return;
+
+    const res = await api.get('/courses');
+    if(!res.ok || !res.courses) return;
+    const existing = new Set(res.courses.map(c => c.code.toUpperCase()));
+
+    for(const c of list){
+      if(c && c.code && !existing.has(c.code.toUpperCase())){
+        await api.post('/courses', c);
+        existing.add(c.code.toUpperCase());
+      }
+    }
+  } catch(e){
+    console.error('Rehydrate failed:', e);
+  }
+}
+
 async function createCourse(){
   const code = document.getElementById('ncCode').value.trim().toUpperCase();
   const name = document.getElementById('ncName').value.trim();
@@ -2136,6 +2184,7 @@ async function createCourse(){
 
   const res = await api.post('/courses', { code, name, series, semester, teacherId, creditHours });
   if(!res.ok){ showToast(res.msg || 'Failed to create course.', 'error'); return; }
+  savePersistedCourse({ code, name, series, semester, teacherId, creditHours });
   closeModal();
   showToast('Course created in database.', 'success');
   navigate('courses');
@@ -2174,6 +2223,7 @@ async function removeCourse(code){
   if(!confirm('Remove this course? All its sessions and attendance records will also be deleted.')) return;
   const res = await api.del('/courses/' + code);
   if(!res.ok){ showToast(res.msg || 'Failed to remove.', 'error'); return; }
+  removePersistedCourse(code);
   showToast('Course removed.', 'success');
   navigate('courses');
 }
@@ -2752,8 +2802,8 @@ async function confirmResetDemo(){
    AUTH: LOGIN & REGISTER
    ============================================================ */
 const DEMO_CREDS = {
-  teacher: {email:'mr@ece.edu', pass:'teacher123'},
-  student: {email:'2201@ece.edu', pass:'student123'},
+  teacher: {email:'moloy@gmail.com', pass:'teacher123'},
+  student: {email:'2410035@ece.ruet.ac.bd', pass:'01130261'},
   admin: {email:'admin@ece.edu', pass:'admin123'},
 };
 
@@ -2870,6 +2920,7 @@ async function init(){
   renderDemoCreds();
   loadSession();
   await loadSystemSettings();
+  await rehydratePersistedCourses();
 
   if(SESSION){
     enterApp();

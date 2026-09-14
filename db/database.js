@@ -127,6 +127,7 @@ function initSchema() {
   if (userCount === 0) {
     seedDatabase();
   }
+  ensureEssentialRecords(db);
 }
 
 function uid(prefix) {
@@ -183,6 +184,8 @@ const COURSE_CATALOG = {
 };
 
 const TEACHER_SEED = [
+  { name: 'Moloy Kumer Ghosh', initial: 'MKG', email: 'moloy@gmail.com', id: 'T_eaprx35xta9' },
+  { name: 'Md Faisal Ahmed', initial: 'MFA', email: 'faisal@gmail.com', id: 'T_bzhhe4abq6j' },
   { name: 'Dr. Mahbubur Rahman', initial: 'MR' },
   { name: 'Prof. Ayesha Siddika', initial: 'AS' },
   { name: 'Dr. Faruk Hossain', initial: 'FH' },
@@ -217,8 +220,8 @@ function seedDatabase() {
 
     const createdTeachers = [];
     TEACHER_SEED.forEach(t => {
-      const tid = uid('T');
-      const email = t.initial.toLowerCase() + '@ece.edu';
+      const tid = t.id || uid('T');
+      const email = t.email || (t.initial.toLowerCase() + '@ece.edu');
       insTeacher.run(tid, t.name, t.initial, email, 'approved');
       createdTeachers.push({ id: tid, name: t.name, initial: t.initial, email });
     });
@@ -311,6 +314,121 @@ function seedDatabase() {
   }
 }
 
+function ensureEssentialRecords(database) {
+  const d = database || db;
+  if (!d) return;
+
+  try {
+    // 1. Ensure Teachers
+    const teacherStmt = d.prepare('SELECT id FROM teachers WHERE LOWER(email) = LOWER(?)');
+    const insTeacher = d.prepare('INSERT INTO teachers (id, name, initial, email, status) VALUES (?, ?, ?, ?, ?)');
+    const updTeacherStatus = d.prepare('UPDATE teachers SET status = ?, name = ?, initial = ? WHERE id = ?');
+
+    let moloyT = teacherStmt.get('moloy@gmail.com');
+    let moloyTid = moloyT ? moloyT.id : 'T_eaprx35xta9';
+    if (!moloyT) {
+      insTeacher.run(moloyTid, 'Moloy Kumer Ghosh', 'MKG', 'moloy@gmail.com', 'approved');
+    } else {
+      updTeacherStatus.run('approved', 'Moloy Kumer Ghosh', 'MKG', moloyT.id);
+    }
+
+    let faisalT = teacherStmt.get('faisal@gmail.com');
+    let faisalTid = faisalT ? faisalT.id : 'T_bzhhe4abq6j';
+    if (!faisalT) {
+      insTeacher.run(faisalTid, 'Md Faisal Ahmed', 'MFA', 'faisal@gmail.com', 'approved');
+    } else {
+      updTeacherStatus.run('approved', 'Md Faisal Ahmed', 'MFA', faisalT.id);
+    }
+
+    // 2. Ensure Students (Ahnaf & Arnob)
+    const studentStmt = d.prepare('SELECT id FROM students WHERE LOWER(studentId) = LOWER(?)');
+    const insStudent = d.prepare('INSERT INTO students (id, studentId, rollNo, name, email, series, semester, photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+
+    let ahnafS = studentStmt.get('2410001');
+    let ahnafSid = ahnafS ? ahnafS.id : 'S_0yksmkxl2md';
+    if (!ahnafS) {
+      insStudent.run(ahnafSid, '2410001', 1, 'Md. Ahnaf Azmain', '2410001@ece.ruet.ac.bd', '24', 3, null);
+    }
+
+    let arnobS = studentStmt.get('2410035');
+    let arnobSid = arnobS ? arnobS.id : 'S_z71k9h7l2md';
+    if (!arnobS) {
+      insStudent.run(arnobSid, '2410035', 35, 'Nabil Ahmed Arnob', '2410035@ece.ruet.ac.bd', '24', 3, null);
+    }
+
+    // 3. Ensure Users
+    const userStmt = d.prepare('SELECT id FROM users WHERE LOWER(email) = LOWER(?)');
+    const insUser = d.prepare('INSERT INTO users (id, role, email, password, linkedId, status, name) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    const updUser = d.prepare('UPDATE users SET role = ?, password = ?, linkedId = ?, status = ?, name = ? WHERE id = ?');
+
+    // Admin
+    const adminU = userStmt.get('admin@ece.edu');
+    if (!adminU) {
+      insUser.run('U_r3zv1rgn1mq', 'admin', 'admin@ece.edu', 'admin123', null, 'active', 'Department Admin');
+    } else {
+      updUser.run('admin', 'admin123', null, 'active', 'Department Admin', adminU.id);
+    }
+
+    // Teacher Moloy
+    const moloyU = userStmt.get('moloy@gmail.com');
+    if (!moloyU) {
+      insUser.run('U_0yslcyfxtat', 'teacher', 'moloy@gmail.com', 'teacher123', moloyTid, 'active', 'Moloy Kumer Ghosh');
+    } else {
+      updUser.run('teacher', 'teacher123', moloyTid, 'active', 'Moloy Kumer Ghosh', moloyU.id);
+    }
+
+    // Teacher Faisal
+    const faisalU = userStmt.get('faisal@gmail.com');
+    if (!faisalU) {
+      insUser.run('U_85ah0ndbq6j', 'teacher', 'faisal@gmail.com', 'teacher123', faisalTid, 'active', 'Md Faisal Ahmed');
+    } else {
+      updUser.run('teacher', 'teacher123', faisalTid, 'active', 'Md Faisal Ahmed', faisalU.id);
+    }
+
+    // Student Ahnaf
+    const ahnafU = userStmt.get('2410001@ece.ruet.ac.bd');
+    if (!ahnafU) {
+      insUser.run('U_qycd2k4l2md', 'student', '2410001@ece.ruet.ac.bd', 'student123', ahnafSid, 'active', 'Md. Ahnaf Azmain');
+    } else {
+      updUser.run('student', 'student123', ahnafSid, 'active', 'Md. Ahnaf Azmain', ahnafU.id);
+    }
+
+    // Student Arnob
+    const arnobU = userStmt.get('2410035@ece.ruet.ac.bd');
+    if (!arnobU) {
+      insUser.run('U_2lr1jowl2md', 'student', '2410035@ece.ruet.ac.bd', '01130261', arnobSid, 'active', 'Nabil Ahmed Arnob');
+    } else {
+      updUser.run('student', '01130261', arnobSid, 'active', 'Nabil Ahmed Arnob', arnobU.id);
+    }
+
+    // 4. Ensure Courses (ECE-2105 & ECE-2103)
+    const courseStmt = d.prepare('SELECT code, teacherId, enrolledStudentIds FROM courses WHERE code = ?');
+    const insCourse = d.prepare('INSERT INTO courses (code, name, series, semester, teacherId, creditHours, enrolledStudentIds) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    const updCourseTeacher = d.prepare('UPDATE courses SET teacherId = ?, enrolledStudentIds = COALESCE(?, enrolledStudentIds) WHERE code = ?');
+
+    // Fetch Series 24 students for enrollment list
+    const s24Rows = d.prepare("SELECT id FROM students WHERE series = '24' ORDER BY rollNo ASC").all();
+    const s24Ids = s24Rows.map(r => r.id);
+    const enrolledJson = s24Ids.length > 0 ? JSON.stringify(s24Ids) : null;
+
+    const c2105 = courseStmt.get('ECE-2105');
+    if (!c2105) {
+      insCourse.run('ECE-2105', 'Analog Electronics and Sessional', '24', 3, moloyTid, 3, enrolledJson);
+    } else if (!c2105.teacherId || !c2105.enrolledStudentIds) {
+      updCourseTeacher.run(moloyTid, enrolledJson, 'ECE-2105');
+    }
+
+    const c2103 = courseStmt.get('ECE-2103');
+    if (!c2103) {
+      insCourse.run('ECE-2103', 'Data structure and Algorithm', '24', 3, faisalTid, 3, enrolledJson);
+    } else if (!c2103.teacherId || !c2103.enrolledStudentIds) {
+      updCourseTeacher.run(faisalTid, enrolledJson, 'ECE-2103');
+    }
+  } catch (err) {
+    console.error('Error in ensureEssentialRecords:', err);
+  }
+}
+
 function resetDatabase() {
   db.exec(`
     DROP TABLE IF EXISTS attendance;
@@ -329,6 +447,7 @@ function resetDatabase() {
 module.exports = {
   getDB,
   resetDatabase,
+  ensureEssentialRecords,
   uid,
   pad2,
   isoDate,
