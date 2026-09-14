@@ -1522,6 +1522,7 @@ async function createTeacher(){
   const assignedCourses = [...document.querySelectorAll('.ntCourseChk:checked')].map(c=>c.value);
   const res = await api.post('/teachers', { name, initial, email, password: pass, assignedCourses });
   if(!res.ok){ showToast(res.msg || 'Failed to create teacher.', 'error'); return; }
+  savePersistedTeacher({ name, initial, email, password: pass, assignedCourses });
   closeModal();
   showToast('Teacher created in database.', 'success');
   navigate('teachers');
@@ -1567,8 +1568,11 @@ async function saveTeacherEdit(id){
 
 async function removeTeacher(id){
   if(!confirm('Remove this teacher account? Assigned courses will become unassigned.')) return;
+  const teachRes = await api.get('/teachers');
+  const t = (teachRes.ok && teachRes.teachers) ? teachRes.teachers.find(x=>x.id===id) : null;
   const res = await api.del('/teachers/' + id);
   if(!res.ok){ showToast(res.msg || 'Failed to remove.', 'error'); return; }
+  if(t && t.email) removePersistedTeacher(t.email);
   showToast('Teacher removed.', 'success');
   navigate('teachers');
 }
@@ -2169,6 +2173,50 @@ async function rehydratePersistedCourses(){
     }
   } catch(e){
     console.error('Rehydrate failed:', e);
+  }
+}
+
+function savePersistedTeacher(teacherObj){
+  try {
+    const raw = localStorage.getItem('ece_persisted_teachers');
+    let list = raw ? JSON.parse(raw) : [];
+    if(!Array.isArray(list)) list = [];
+    list = list.filter(t => t.email.toLowerCase() !== teacherObj.email.toLowerCase());
+    list.push(teacherObj);
+    localStorage.setItem('ece_persisted_teachers', JSON.stringify(list));
+  } catch(e){}
+}
+
+function removePersistedTeacher(email){
+  try {
+    const raw = localStorage.getItem('ece_persisted_teachers');
+    if(!raw) return;
+    let list = JSON.parse(raw);
+    if(!Array.isArray(list)) return;
+    list = list.filter(t => t.email.toLowerCase() !== email.toLowerCase());
+    localStorage.setItem('ece_persisted_teachers', JSON.stringify(list));
+  } catch(e){}
+}
+
+async function rehydratePersistedTeachers(){
+  try {
+    const raw = localStorage.getItem('ece_persisted_teachers');
+    if(!raw) return;
+    const list = JSON.parse(raw);
+    if(!Array.isArray(list) || list.length === 0) return;
+
+    const res = await api.get('/teachers');
+    if(!res.ok || !res.teachers) return;
+    const existing = new Set(res.teachers.map(t => t.email.toLowerCase()));
+
+    for(const t of list){
+      if(t && t.email && !existing.has(t.email.toLowerCase())){
+        await api.post('/teachers', t);
+        existing.add(t.email.toLowerCase());
+      }
+    }
+  } catch(e){
+    console.error('Rehydrate teachers failed:', e);
   }
 }
 

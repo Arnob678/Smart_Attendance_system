@@ -30,7 +30,7 @@ router.post('/', (req, res) => {
 
   const existing = db.prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?)').get(cleanEmail);
   if (existing) {
-    return res.status(400).json({ ok: false, msg: 'Email is already in use.' });
+    return res.json({ ok: true, msg: 'Teacher already exists.', id: existing.linkedId, existed: true });
   }
 
   const tid = uid('T');
