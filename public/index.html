@@ -14,7 +14,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-<link rel="stylesheet" href="styles.css?v=4.0">
+<link rel="stylesheet" href="styles.css?v=5.0">
 </head>
 <body>
 
@@ -27,8 +27,8 @@
       <div><strong>ECE Attendance</strong><span>Department System</span></div>
     </div>
     <div class="lv-quote">
-      <h2>Roll called. Box tapped. Done.</h2>
-      <p>Built for the way attendance actually happens in an ECE classroom — one roll number at a time, sorted, fast, and accurate to the second.</p>
+      <h2>Smarter attendance for <span>RUET ECE.</span></h2>
+      <p>Built for the way attendance actually happens in a real classroom — one roll number at a time, sorted, fast, and accurate to the second. Official RUET reports, instant exports.</p>
     </div>
     <div class="lv-stats" id="loginStats">
       <div><strong>5</strong><span>Series</span></div>
@@ -38,6 +38,16 @@
   </div>
   <div class="login-panel">
     <div class="login-box">
+
+      <!-- Brand badge on the right panel -->
+      <div class="login-box-brand">
+        <div class="lb-icon">ECE</div>
+        <div>
+          <strong>ECE Attendance</strong>
+          <span>RUET · Electrical &amp; Computer Engineering</span>
+        </div>
+      </div>
+
       <div class="login-tabs">
         <button id="tabLoginBtn" class="active" onclick="switchAuthTab('login')">Sign in</button>
         <button id="tabRegisterBtn" onclick="switchAuthTab('register')">Student registration</button>
